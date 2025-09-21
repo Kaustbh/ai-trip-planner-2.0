@@ -1,0 +1,41 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+
+# Jupyter Notebooks (contain sensitive data)
+notebooks/
+*.ipynb
+
+# API Keys and sensitive data
+*.key
+*.pem
+secrets/
+.env.local
+.env.production
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data directories
+data/
+*.db
+*.sqlite

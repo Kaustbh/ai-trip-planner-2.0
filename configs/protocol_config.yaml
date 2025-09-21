@@ -1,0 +1,141 @@
+# Protocol Configuration for AI Trip Planner
+
+# MCP Protocol Configuration
+mcp:
+  enabled: true
+  server_url: "http://localhost:8000"
+  timeout: 30
+  retry_attempts: 3
+  retry_delay: 1
+  max_message_size: 1048576  # 1MB
+  compression_enabled: false
+  encryption_enabled: false
+  message_ordering: true
+  delivery_guarantee: "at_least_once"
+
+# A2A Protocol Configuration
+a2a:
+  enabled: true
+  discovery_enabled: true
+  discovery_interval: 30
+  heartbeat_interval: 10
+  max_agents: 100
+  message_broadcast: true
+  encryption_key: null
+  compression_threshold: 1024
+
+# Hybrid Protocol Configuration
+hybrid:
+  enabled: true
+  routing_strategy: "intelligent"  # intelligent, mcp_first, a2a_first
+  fallback_enabled: true
+  load_balancing: true
+  message_priority_threshold: 3
+  mcp_config:
+    enabled: true
+    server_url: "http://localhost:8000"
+  a2a_config:
+    enabled: true
+    discovery_enabled: true
+
+# Message Routing
+message_routing:
+  default_protocol: "hybrid"
+  priority_routing:
+    high_priority: "mcp"
+    normal_priority: "hybrid"
+    low_priority: "a2a"
+  
+  capability_routing:
+    tool_calls: "mcp"
+    agent_communication: "a2a"
+    broadcast_messages: "a2a"
+
+# Protocol Selection Rules
+protocol_selection:
+  rules:
+    - condition: "message_type == 'tool_call'"
+      protocol: "mcp"
+    - condition: "priority >= 3"
+      protocol: "mcp"
+    - condition: "recipient_type == 'agent'"
+      protocol: "a2a"
+    - condition: "message_type == 'broadcast'"
+      protocol: "a2a"
+    - condition: "default"
+      protocol: "hybrid"
+
+# Connection Management
+connection_management:
+  max_connections: 50
+  connection_timeout: 30
+  keep_alive: true
+  keep_alive_interval: 30
+  connection_retry_attempts: 3
+  connection_retry_delay: 5
+
+# Security
+security:
+  encryption:
+    enabled: false
+    algorithm: "AES-256-GCM"
+    key_rotation_interval: 86400  # 24 hours
+  
+  authentication:
+    enabled: false
+    method: "api_key"  # api_key, jwt, oauth2
+    token_expiry: 3600  # 1 hour
+  
+  authorization:
+    enabled: false
+    role_based_access: true
+    permissions:
+      - "read"
+      - "write"
+      - "execute"
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics_collection: true
+  health_checks:
+    enabled: true
+    interval: 30
+    timeout: 10
+  
+  logging:
+    enabled: true
+    level: "INFO"
+    format: "json"
+    destination: "file"  # file, stdout, database
+    
+  alerting:
+    enabled: false
+    channels: ["email", "slack"]
+    thresholds:
+      error_rate: 0.1
+      response_time: 5.0
+      connection_failures: 5
+
+# Performance Tuning
+performance:
+  message_batching:
+    enabled: true
+    batch_size: 10
+    batch_timeout: 1.0
+  
+  connection_pooling:
+    enabled: true
+    min_connections: 5
+    max_connections: 50
+    connection_timeout: 30
+  
+  message_compression:
+    enabled: false
+    algorithm: "gzip"
+    threshold: 1024
+  
+  message_deduplication:
+    enabled: true
+    ttl: 300  # 5 minutes
+    max_cache_size: 10000

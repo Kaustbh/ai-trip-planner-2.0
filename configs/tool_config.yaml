@@ -1,0 +1,240 @@
+# Tool Configuration for AI Trip Planner
+
+# Search Tools
+search_tools:
+  google:
+    enabled: true
+    api_key: "${GOOGLE_SEARCH_API_KEY}"
+    search_engine_id: "${GOOGLE_SEARCH_ENGINE_ID}"
+    base_url: "https://www.googleapis.com/customsearch/v1"
+    timeout: 30
+    rate_limit: 100  # requests per day
+    retry_attempts: 3
+    
+  bing:
+    enabled: true
+    api_key: "${BING_API_KEY}"
+    base_url: "https://api.bing.microsoft.com/v7.0/search"
+    timeout: 30
+    rate_limit: 1000  # requests per month
+    retry_attempts: 3
+    
+  duckduckgo:
+    enabled: true
+    base_url: "https://api.duckduckgo.com"
+    timeout: 30
+    rate_limit: 1000  # requests per day
+    retry_attempts: 3
+
+# Travel APIs
+travel_apis:
+  amadeus:
+    enabled: true
+    api_key: "${AMADEUS_API_KEY}"
+    api_secret: "${AMADEUS_API_SECRET}"
+    base_url: "https://api.amadeus.com"
+    timeout: 30
+    rate_limit: 2000  # requests per month
+    retry_attempts: 3
+    
+  skyscanner:
+    enabled: true
+    api_key: "${SKYSCANNER_API_KEY}"
+    base_url: "https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com"
+    timeout: 30
+    rate_limit: 500  # requests per month
+    retry_attempts: 3
+    
+  booking:
+    enabled: true
+    api_key: "${BOOKING_API_KEY}"
+    base_url: "https://booking-com.p.rapidapi.com"
+    timeout: 30
+    rate_limit: 1000  # requests per month
+    retry_attempts: 3
+
+# Weather APIs
+weather_apis:
+  openweathermap:
+    enabled: true
+    api_key: "${OPENWEATHER_API_KEY}"
+    base_url: "https://api.openweathermap.org/data/2.5"
+    timeout: 30
+    rate_limit: 1000  # requests per day
+    retry_attempts: 3
+    
+  weather_api:
+    enabled: false
+    api_key: "${WEATHER_API_KEY}"
+    base_url: "https://api.weatherapi.com/v1"
+    timeout: 30
+    rate_limit: 1000  # requests per day
+    retry_attempts: 3
+
+# Maps APIs
+maps_apis:
+  google_maps:
+    enabled: true
+    api_key: "${GOOGLE_MAPS_API_KEY}"
+    base_url: "https://maps.googleapis.com/maps/api"
+    timeout: 30
+    rate_limit: 1000  # requests per day
+    retry_attempts: 3
+    
+  mapbox:
+    enabled: false
+    api_key: "${MAPBOX_API_KEY}"
+    base_url: "https://api.mapbox.com"
+    timeout: 30
+    rate_limit: 1000  # requests per day
+    retry_attempts: 3
+
+# Database Tools
+database_tools:
+  postgresql:
+    enabled: true
+    connection_string: "${DATABASE_URL}"
+    pool_size: 10
+    max_overflow: 20
+    timeout: 30
+    retry_attempts: 3
+    
+  redis:
+    enabled: true
+    connection_string: "${REDIS_URL}"
+    timeout: 30
+    retry_attempts: 3
+    key_prefix: "trip_planner:"
+
+# Function Tools
+function_tools:
+  summarize:
+    enabled: true
+    max_input_length: 10000
+    default_summary_length: 3
+    supported_languages: ["en", "es", "fr", "de", "it", "pt"]
+    timeout: 30
+    
+  translate:
+    enabled: true
+    supported_languages: ["en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh"]
+    timeout: 30
+    retry_attempts: 3
+    
+  sentiment_analysis:
+    enabled: true
+    timeout: 30
+    retry_attempts: 3
+
+# Tool Selection Strategy
+tool_selection:
+  strategy: "capability_based"  # capability_based, load_based, round_robin
+  fallback_enabled: true
+  load_balancing: true
+  
+  # Tool priorities by capability
+  capability_priorities:
+    web_search: ["google", "bing", "duckduckgo"]
+    flight_search: ["amadeus", "skyscanner"]
+    hotel_search: ["booking", "amadeus"]
+    weather: ["openweathermap", "weather_api"]
+    maps: ["google_maps", "mapbox"]
+    translation: ["translate"]
+    summarization: ["summarize"]
+
+# Rate Limiting
+rate_limiting:
+  global:
+    enabled: true
+    requests_per_minute: 100
+    burst_limit: 20
+    
+  per_tool:
+    enabled: true
+    default_limit: 60  # requests per minute
+    burst_limit: 10
+    
+  per_user:
+    enabled: true
+    default_limit: 30  # requests per minute
+    burst_limit: 5
+
+# Caching
+caching:
+  enabled: true
+  default_ttl: 3600  # 1 hour
+  max_size: 10000
+  strategy: "lru"
+  
+  # Tool-specific cache settings
+  tool_cache_ttl:
+    search_tools: 1800  # 30 minutes
+    travel_apis: 3600   # 1 hour
+    weather_apis: 1800  # 30 minutes
+    maps_apis: 7200     # 2 hours
+    function_tools: 0   # No caching
+
+# Error Handling
+error_handling:
+  retry_strategies:
+    exponential_backoff:
+      enabled: true
+      base_delay: 1
+      max_delay: 60
+      multiplier: 2
+      
+    linear_backoff:
+      enabled: false
+      delay: 5
+      max_attempts: 3
+  
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    recovery_timeout: 300  # 5 minutes
+    half_open_max_calls: 3
+  
+  fallback_behavior:
+    enabled: true
+    fallback_tools:
+      google: ["bing", "duckduckgo"]
+      amadeus: ["skyscanner"]
+      openweathermap: ["weather_api"]
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics_collection: true
+  
+  health_checks:
+    enabled: true
+    interval: 60  # seconds
+    timeout: 10
+    tools_to_check: ["google", "amadeus", "openweathermap"]
+  
+  alerting:
+    enabled: false
+    channels: ["email", "slack"]
+    thresholds:
+      error_rate: 0.1
+      response_time: 5.0
+      availability: 0.95
+
+# Security
+security:
+  api_key_rotation:
+    enabled: false
+    rotation_interval: 86400  # 24 hours
+    
+  request_signing:
+    enabled: false
+    algorithm: "HMAC-SHA256"
+    
+  ip_whitelisting:
+    enabled: false
+    allowed_ips: []
+    
+  rate_limit_by_ip:
+    enabled: true
+    requests_per_minute: 60
+    burst_limit: 10
