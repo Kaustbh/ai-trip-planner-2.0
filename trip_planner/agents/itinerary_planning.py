@@ -276,7 +276,7 @@ class ItineraryPlanningAgent:
             weather_forecast = state.get('weather_forecast', [])
             destination = state.get('destination', '')
             group_size = state.get('group_size', 1)
-            budget = state.get('budget')
+            # budget = state.get('budget')
             
             if not places:
                 return {
@@ -288,12 +288,12 @@ class ItineraryPlanningAgent:
             # Prepare data for LLM
             places_summary = self._prepare_places_summary(places)
             weather_summary = self._prepare_weather_summary(weather_forecast)
-            budget_level = self._determine_budget_level(budget, duration_days, group_size)
+            # budget_level = self._determine_budget_level(budget, duration_days, group_size)
             
             # Use LLM to create intelligent itinerary
             itinerary_data = self._create_itinerary_with_llm(
                 destination, duration_days, group_size, preferences, 
-                budget_level, places_summary, weather_summary, places, start_date
+                 places_summary, weather_summary, places, start_date
             )
             
             # Convert to ItineraryDay objects
@@ -376,7 +376,7 @@ class ItineraryPlanningAgent:
                 'duration_days': duration_days,
                 'group_size': group_size,
                 'preferences': ', '.join(preferences) if preferences else 'general tourism',
-                'budget_level': budget_level,
+                
                 'places_summary': places_summary,
                 'weather_summary': weather_summary
             })

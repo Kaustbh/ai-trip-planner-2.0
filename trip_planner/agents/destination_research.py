@@ -99,7 +99,7 @@ class DestinationResearchAgent:
         self.place_filtering_prompt = ChatPromptTemplate.from_messages([
             ("system", """You are an expert travel advisor with deep knowledge of tourist destinations worldwide.
             
-            Your task is to filter top(best) 10 tourist places based on user preferences and provide intelligent recommendations.
+            Your task is to filter and rank tourist places based on user preferences and provide intelligent recommendations.
             
             User preferences: {preferences}
             Destination: {destination}
@@ -178,14 +178,14 @@ class DestinationResearchAgent:
             filtered_places = self._filter_places_with_llm(places_data, destination, preferences)
             
             # Step 3: Use LLM to enhance place descriptions
-            enhanced_places = self._enhance_places_with_llm(filtered_places, destination)
+            # enhanced_places = self._enhance_places_with_llm(filtered_places, destination)
             
             # Convert to Place objects
             places = []
-            for place_data in enhanced_places:
+            for place_data in filtered_places:
                 place = Place(
                     name=place_data.get('name', ''),
-                    description=place_data.get('enhanced_description', place_data.get('description', '')),
+                    description=place_data.get('description',''),
                     rating=place_data.get('rating'),
                     address=place_data.get('address'),
                     category=place_data.get('category'),
@@ -201,7 +201,7 @@ class DestinationResearchAgent:
                 'messages': state.get('messages', []) + [
                     {
                         'type': 'info',
-                        'content': f'Found and enhanced {len(places)} tourist places in {destination} using AI'
+                        'content': f'Found and enhanced {len(places)} tourist places in {destination} using LLM'
                     }
                 ]
             }

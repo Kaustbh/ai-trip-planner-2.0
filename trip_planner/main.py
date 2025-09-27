@@ -89,7 +89,7 @@ class TripPlanner:
             start_date=start_date,
             end_date=end_date,
             duration_days=duration_days,
-            budget=budget,
+            # budget=budget,
             preferences=preferences,
             group_size=group_size
         )
@@ -101,7 +101,7 @@ class TripPlanner:
                        start_date: str = None,
                        end_date: str = None,
                        duration_days: int = None,
-                       budget: float = None,
+                    #       budget: float = None,
                        preferences: List[str] = None,
                        group_size: int = 1):
         """
@@ -148,7 +148,7 @@ class TripPlanner:
             start_date=start_date,
             end_date=end_date,
             duration_days=duration_days,
-            budget=budget,
+            # budget=budget,
             preferences=preferences,
             group_size=group_size
         ):
@@ -189,12 +189,12 @@ class TripPlanner:
                 print(f"  Day {date_str}: {places_count} places planned")
         
         # Budget
-        budget = trip_plan.get('budget_breakdown')
-        if budget:
-            print(f"\n💰 Budget Estimate:")
-            print(f"  Total: ${budget.get('total_estimated', 0):,.2f}")
-            print(f"  Per Day: ${budget.get('daily_average', 0):,.2f}")
-            print(f"  Per Person: ${budget.get('per_person', 0):,.2f}")
+        # budget = trip_plan.get('budget_breakdown')
+        # if budget:
+        #     print(f"\n💰 Budget Estimate:")
+        #     print(f"  Total: ${budget.get('total_estimated', 0):,.2f}")
+        #     print(f"  Per Day: ${budget.get('daily_average', 0):,.2f}")
+        #     print(f"  Per Person: ${budget.get('per_person', 0):,.2f}")
         
         # Weather
         weather = trip_plan.get('weather_forecast', [])

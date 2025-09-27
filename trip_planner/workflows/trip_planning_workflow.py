@@ -52,7 +52,7 @@ class TripPlanningWorkflow:
         self.image_agent = ImageRetrievalAgent(self.llm)
         self.weather_agent = WeatherForecastAgent(self.llm)
         self.itinerary_agent = ItineraryPlanningAgent(self.llm)
-        self.budget_agent = BudgetPlanningAgent(self.llm)
+        # self.budget_agent = BudgetPlanningAgent(self.llm)
         
         # Build workflow
         self.workflow = self._build_workflow()
@@ -66,7 +66,7 @@ class TripPlanningWorkflow:
         workflow.add_node("retrieve_images", self._retrieve_images_node)
         workflow.add_node("get_weather", self._get_weather_node)
         workflow.add_node("plan_itinerary", self._plan_itinerary_node)
-        workflow.add_node("plan_budget", self._plan_budget_node)
+        # workflow.add_node("plan_budget", self._plan_budget_node)
         workflow.add_node("finalize_plan", self._finalize_plan_node)
         
         # Define edges
@@ -74,8 +74,9 @@ class TripPlanningWorkflow:
         workflow.add_edge("research_destination", "retrieve_images")
         workflow.add_edge("retrieve_images", "get_weather")
         workflow.add_edge("get_weather", "plan_itinerary")
-        workflow.add_edge("plan_itinerary", "plan_budget")
-        workflow.add_edge("plan_budget", "finalize_plan")
+        workflow.add_edge("plan_itinerary", "finalize_plan")
+        # workflow.add_edge("plan_itinerary", "plan_budget")
+        # workflow.add_edge("plan_budget", "finalize_plan")
         workflow.add_edge("finalize_plan", END)
         
         return workflow.compile()
@@ -96,9 +97,9 @@ class TripPlanningWorkflow:
         """Node for planning itinerary."""
         return self.itinerary_agent.plan_itinerary(state)
     
-    def _plan_budget_node(self, state: TripPlanningState) -> TripPlanningState:
-        """Node for planning budget."""
-        return self.budget_agent.plan_budget(state)
+    # def _plan_budget_node(self, state: TripPlanningState) -> TripPlanningState:
+    #     """Node for planning budget."""
+    #     return self.budget_agent.plan_budget(state)
     
     def _finalize_plan_node(self, state: TripPlanningState) -> TripPlanningState:
         """Node for finalizing the trip plan."""
@@ -153,7 +154,7 @@ class TripPlanningWorkflow:
                   start_date: str = None,
                   end_date: str = None,
                   duration_days: int = None,
-                  budget: float = None,
+                #   budget: float = None,
                   preferences: List[str] = None,
                   group_size: int = 1) -> Dict[str, Any]:
         """
@@ -180,7 +181,7 @@ class TripPlanningWorkflow:
             'start_date': start_date,
             'end_date': end_date,
             'duration_days': duration_days,
-            'budget': budget,
+            # 'budget': budget,
             'preferences': preferences or [],
             'group_size': group_size,
             'places': [],
@@ -210,7 +211,7 @@ class TripPlanningWorkflow:
                        start_date: str = None,
                        end_date: str = None,
                        duration_days: int = None,
-                       budget: float = None,
+                    #    budget: float = None,
                        preferences: List[str] = None,
                        group_size: int = 1):
         """
@@ -237,7 +238,7 @@ class TripPlanningWorkflow:
             'start_date': start_date,
             'end_date': end_date,
             'duration_days': duration_days,
-            'budget': budget,
+            # 'budget': budget,
             'preferences': preferences or [],
             'group_size': group_size,
             'places': [],

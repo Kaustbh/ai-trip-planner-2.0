@@ -11,7 +11,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 from ..state import WeatherData
+import os
 
+forecast_url = "https://api.open-meteo.com/v1/forecast"
+historical_url = "https://archive-api.open-meteo.com/v1/archive"
 
 class WeatherForecastInput(BaseModel):
     """Input schema for weather forecast."""
@@ -35,72 +38,166 @@ def get_weather_forecast(location: str, start_date: str, end_date: str) -> List[
     """
     try:
         # First, get coordinates for the location
-        geocoding_url = "https://geocoding-api.open-meteo.com/v1/search"
+        geocoding_url = "http://api.openweathermap.org/geo/1.0/direct"
         geocoding_params = {
-            "name": location,
-            "count": 1,
-            "language": "en",
-            "format": "json"
-        }
-        
+                    "q": location,
+                    "limit": 1,
+                    "appid": os.getenv("WEATHER_API_KEY")
+                }
+                
         geocoding_response = requests.get(geocoding_url, params=geocoding_params)
         geocoding_response.raise_for_status()
         geocoding_data = geocoding_response.json()
         
-        if not geocoding_data.get("results"):
-            return []
         
-        result = geocoding_data["results"][0]
-        latitude = result["latitude"]
-        longitude = result["longitude"]
+        result = geocoding_data[0]
+        latitude = result["lat"]
+        longitude = result["lon"]
         
-        # Get weather forecast
-        weather_url = "https://api.open-meteo.com/v1/forecast"
-        weather_params = {
-            "latitude": latitude,
-            "longitude": longitude,
-            "start_date": start_date,
-            "end_date": end_date,
-            "daily": [
-                "temperature_2m_max",
-                "temperature_2m_min", 
-                "weather_code",
-                "precipitation_sum",
-                "wind_speed_10m_max",
-                "relative_humidity_2m_max"
-            ],
-            "timezone": "auto"
-        }
-        
-        weather_response = requests.get(weather_url, params=weather_params)
-        weather_response.raise_for_status()
-        weather_data = weather_response.json()
-        
-        # Process weather data
-        daily_data = weather_data.get("daily", {})
-        dates = daily_data.get("time", [])
-        weather_forecast = []
-        
-        for i, date_str in enumerate(dates):
-            weather_code = daily_data.get("weather_code", [])[i]
-            description = get_weather_description(weather_code)
-            
-            weather_day = {
-                "date": date_str,
-                "temperature_max": daily_data.get("temperature_2m_max", [])[i],
-                "temperature_min": daily_data.get("temperature_2m_min", [])[i],
-                "description": description,
-                "humidity": daily_data.get("relative_humidity_2m_max", [])[i],
-                "wind_speed": daily_data.get("wind_speed_10m_max", [])[i],
-                "precipitation": daily_data.get("precipitation_sum", [])[i]
-            }
-            weather_forecast.append(weather_day)
-        
-        return weather_forecast
-        
+
+        return get_weather(latitude, longitude, start_date, end_date)
     except Exception as e:
         print(f"Error getting weather forecast: {str(e)}")
         return []
+
+
+def get_weather(lat, lng, start_date, end_date):
+        """Get weather forecast or historical data for a location and date range"""
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+        # end = start + timedelta(days=duration - 1)
+        end = datetime.strptime(end_date, "%Y-%m-%d")
+        today = datetime.now()
+
+        if end <= today + timedelta(days=15):
+            # Use forecast data
+            return _get_forecast_data(lat, lng, start, end)
+        else:
+            # Use historical data
+            return _get_historical_estimate(lat, lng, start, end)
+
+def _get_forecast_data(lat, lng, start, end):
+        """Retrieve forecast data from Open-Meteo API"""
+        params = {
+            "latitude": lat,
+            "longitude": lng,
+            "start_date": start.strftime("%Y-%m-%d"),
+            "end_date": end.strftime("%Y-%m-%d"),
+            "daily": ["temperature_2m_max", "temperature_2m_min", "precipitation_sum", "wind_speed_10m_max", "precipitation_probability_mean", "uv_index_max"],
+            "timezone": "auto"
+        }
+        try:
+            response = requests.get(forecast_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            return _format_weather_data(data)
+        except requests.RequestException as e:
+            print(f"Error fetching forecast data: {e}")
+            return {"error": "Unable to fetch forecast data"}
+
+def _get_historical_estimate(lat, lng, start, end):
+        """Estimate future weather based on historical data"""
+        historical_data = []
+        # Get historical data from past years, ensuring we only request data that's actually in the past
+        today = datetime.now().date()
+        for year_offset in range(1,2):
+            past_start = start - timedelta(days=365 * year_offset)
+            past_end = end - timedelta(days=365 * year_offset)
+            
+            # Skip this year if the end date isn't in the past yet
+            if past_end.date() >= today:
+                print(f"Skipping year offset {year_offset} as data isn't available yet")
+                continue
+            params = {
+                "latitude": lat,
+                "longitude": lng,
+                "start_date": past_start.strftime("%Y-%m-%d"),
+                "end_date": past_end.strftime("%Y-%m-%d"),
+                "daily": ["temperature_2m_max", "temperature_2m_min", "precipitation_sum", "wind_speed_10m_max",],
+                "timezone": "auto"
+            }
+            try:
+                response = requests.get(historical_url, params=params)
+                response.raise_for_status()
+                data = response.json()
+                historical_data.append(data)
+            except requests.RequestException as e:
+                print(f"Error fetching historical data for {past_start.year}: {e}")
+                continue
+
+        if not historical_data:
+            return {"error": "Unable to fetch sufficient historical data"}
+
+        return _average_historical_data(historical_data)
+
+
+def _format_weather_data(data):
+        """Format weather data into a user-friendly structure"""
+        formatted_data = []
+        daily = data.get("daily", {})
+        dates = daily.get("time", [])
+        max_temps = daily.get("temperature_2m_max", [])
+        min_temps = daily.get("temperature_2m_min", [])
+        precipitations = daily.get("precipitation_sum", [])
+        wind_speeds = daily.get("wind_speed_10m_max", [])
+        precip_probabilities = daily.get("precipitation_probability_mean", [])
+        uv_indices = daily.get("uv_index_max", [])
+
+        for i in range(len(dates)):
+            formatted_data.append({
+                "date": dates[i],
+                "max_temp": f"{max_temps[i]} °C",
+                "min_temp": f"{min_temps[i]} °C",
+                "precipitation": f"{precipitations[i]} mm",
+                "wind_speed": f"{wind_speeds[i]} km/h" if i < len(wind_speeds) else None,
+                "precipitation_probability": f"{precip_probabilities[i]}%" if i < len(precip_probabilities) else None,
+                "uv_index": f"{uv_indices[i]}" if i < len(uv_indices) else None
+            })
+
+        return formatted_data
+
+
+def _average_historical_data(historical_data):
+        """Calculate average weather metrics from historical data"""
+        aggregated_data = {}
+        count = 0
+
+        for data in historical_data:
+            daily = data.get("daily", {})
+            dates = daily.get("time", [])
+            max_temps = daily.get("temperature_2m_max", [])
+            min_temps = daily.get("temperature_2m_min", [])
+            precipitations = daily.get("precipitation_sum", [])
+            wind_speeds = daily.get("wind_speed_10m_max", [])
+
+            for i in range(len(dates)):
+                date = dates[i]
+                if date not in aggregated_data:
+                    aggregated_data[date] = {
+                        "max_temp": 0,
+                        "min_temp": 0,
+                        "precipitation": 0,
+                        "wind_speed": 0,
+                        "count": 0
+                    }
+                aggregated_data[date]["max_temp"] += max_temps[i]
+                aggregated_data[date]["min_temp"] += min_temps[i]
+                aggregated_data[date]["precipitation"] += precipitations[i]
+                if i < len(wind_speeds):
+                    aggregated_data[date]["wind_speed"] += wind_speeds[i]
+                aggregated_data[date]["count"] += 1
+
+        averaged_data = []
+        for date, values in aggregated_data.items():
+            averaged_data.append({
+                "date": date,
+                "max_temp": f"{values['max_temp'] / values['count']:.1f} °C",
+                "min_temp": f"{values['min_temp'] / values['count']:.1f} °C",
+                "precipitation": f"{values['precipitation'] / values['count']:.1f} mm",
+                "wind_speed": f"{values['wind_speed'] / values['count']:.1f} km/h",
+            })
+
+        return averaged_data
+
 
 
 def get_weather_description(weather_code: int) -> str:
@@ -261,22 +358,11 @@ class WeatherForecastAgent:
                 )
                 weather_forecast.append(weather_day)
             
-            # Step 2: Use LLM to analyze weather and provide recommendations
-            weather_insights = self._analyze_weather_with_llm(
-                destination, weather_forecast, duration_days, preferences
-            )
-            
-            # Step 3: Get packing recommendations
-            packing_tips = self._get_packing_recommendations(
-                destination, weather_forecast, duration_days, state.get('places', [])
-            )
             
             # Update state
             updated_state = {
                 **state,
                 'weather_forecast': weather_forecast,
-                'weather_insights': weather_insights,
-                'packing_recommendations': packing_tips,
                 'current_step': 'weather_forecasted',
                 'messages': state.get('messages', []) + [
                     {

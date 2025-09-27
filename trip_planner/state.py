@@ -55,7 +55,7 @@ class TripPlanningState(TypedDict, total=False):
     start_date: Optional[Date]
     end_date: Optional[Date]
     duration_days: Optional[int]
-    budget: Optional[float]
+    # budget: Optional[float]
     preferences: List[str]
     group_size: Optional[int]
     
@@ -66,7 +66,7 @@ class TripPlanningState(TypedDict, total=False):
     
     # Planning results
     itinerary: List[ItineraryDay]
-    budget_breakdown: Optional[Dict[str, float]]
+    # budget_breakdown: Optional[Dict[str, float]]
     recommendations: List[str]
     
     # System state

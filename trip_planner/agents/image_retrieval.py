@@ -47,7 +47,7 @@ def get_place_images(places: List[str]) -> Dict[str, str]:
     for place in places:
         try:
             payload = json.dumps({
-                "q": f"{place} tourist attraction",
+                "q": f"{place}",
                 "gl": "us",  # Country code
                 "num": 1  # Get only the first image
             })
@@ -59,10 +59,10 @@ def get_place_images(places: List[str]) -> Dict[str, str]:
             image_url = None
             
             # Look for Wikipedia image first (usually higher quality)
-            for img in result.get("images", []):
-                if img.get("domain") == "en.wikipedia.org":
-                    image_url = img.get("imageUrl")
-                    break
+            # for img in result.get("images", []):
+            #     if img.get("domain") == "en.wikipedia.org":
+            #         image_url = img.get("imageUrl")
+            #         break
             
             # If no Wikipedia image found, use the first available image
             if not image_url and result.get("images"):
@@ -179,19 +179,19 @@ class ImageRetrievalAgent:
             images = get_place_images.invoke({'places': place_names})
             
             # Step 2: Use LLM to analyze places and generate visual content
-            visual_analysis = self._analyze_places_with_llm(
-                places, state.get('destination', ''), state.get('preferences', [])
-            )
+            # visual_analysis = self._analyze_places_with_llm(
+            #     places, state.get('destination', ''), state.get('preferences', [])
+            # )
             
             # Step 3: Generate captions for each place
-            enhanced_places = self._enhance_places_with_captions(places, images, visual_analysis)
+            # enhanced_places = self._enhance_places_with_captions(places, images, visual_analysis)
             
             # Update state
             updated_state = {
                 **state,
-                'places': enhanced_places,
+                # 'places': enhanced_places,
                 'place_images': images,
-                'visual_analysis': visual_analysis,
+                # 'visual_analysis': visual_analysis,
                 'current_step': 'images_retrieved',
                 'messages': state.get('messages', []) + [
                     {
